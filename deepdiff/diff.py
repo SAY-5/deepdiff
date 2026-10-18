@@ -760,7 +760,12 @@ class DeepDiff(ResultDict, SerializationMixin, DistanceMixin, DeepDiffProtocol, 
         t_keys_removed = t1_keys - t_keys_intersect
 
         if self.threshold_to_diff_deeper:
-            if self.exclude_paths or self.exclude_glob_paths or self.exclude_regex_paths:
+            t_keys_union_len = len(t2_keys | t1_keys)
+            if (
+                (self.exclude_paths or self.exclude_glob_paths or self.exclude_regex_paths)
+                and t_keys_union_len > 1
+                and len(t_keys_intersect) / t_keys_union_len < self.threshold_to_diff_deeper
+            ):
                 t_keys_union = set()
                 for key in t2_keys | t1_keys:
                     if self.exclude_regex_paths and not (self.include_paths or self.include_glob_paths):
@@ -783,8 +788,6 @@ class DeepDiff(ResultDict, SerializationMixin, DistanceMixin, DeepDiffProtocol, 
                     t_keys_union = {k for k in t_keys_union
                                     if not any(gp.match(k) for gp in self.exclude_glob_paths)}
                 t_keys_union_len = len(t_keys_union)
-            else:
-                t_keys_union_len = len(t2_keys | t1_keys)
             if t_keys_union_len > 1 and len(t_keys_intersect) / t_keys_union_len < self.threshold_to_diff_deeper:
                 self._report_result('values_changed', level, local_tree=local_tree)
                 return
